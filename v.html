@@ -38,11 +38,16 @@ td.amt{font-size:19px}
     var md = /[?&]d=([^&#]+)/.exec(q), mt = /[?&]t=([^&#]+)/.exec(q);
     if (md) {
       var x = JSON.parse(dec(md[1]));
-      var rows = [['브랜드', esc(x.b)], ['매체', '네이버 검색광고'], ['광고계정ID', esc(x.n)], ['AdAccontNo', esc(x.i)],
-        ['충전 요청 금액', '<span class="amt">' + Number(x.a).toLocaleString('ko-KR') + '원</span>'], ['충전 날짜', day(x.d) + '까지'],
-        ['요청', '오피노' + (x.by ? ' ' + esc(x.by) : '') + (x.at ? ' · ' + when(x.at) : '')]];
-      el.innerHTML = '<table>' + rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td' + (r[0] === '충전 요청 금액' ? ' class="amt"' : '') + '>' + r[1] + '</td></tr>'; }).join('') + '</table>';
-      document.title = '충전 요청서 — ' + x.b + ' ' + Number(x.a).toLocaleString('ko-KR') + '원';
+      // 새 형식 {items:[[브랜드,계정명,ID,충전일,금액],...], by, at} / 예전 형식 {b,n,i,d,a,by,at}
+      var accs = Array.isArray(x.items) ? x.items.map(function (a) { return { b: a[0], n: a[1], i: a[2], d: a[3], a: a[4] }; }) : [x];
+      var tbl = function (a) {
+        var rows = [['브랜드', esc(a.b)], ['매체', '네이버 검색광고'], ['광고계정ID', esc(a.n)], ['AdAccontNo', esc(a.i)],
+          ['충전 요청 금액', '<span class="amt">' + Number(a.a).toLocaleString('ko-KR') + '원</span>'], ['충전 날짜', day(a.d) + '까지']];
+        return '<table>' + rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td' + (r[0] === '충전 요청 금액' ? ' class="amt"' : '') + '>' + r[1] + '</td></tr>'; }).join('') + '</table>';
+      };
+      el.innerHTML = accs.map(tbl).join('<div style="height:14px;border-bottom:2px solid var(--rule);margin-bottom:14px"></div>') +
+        '<table style="margin-top:14px"><tr><th>요청</th><td>오피노' + (x.by ? ' ' + esc(x.by) : '') + (x.at ? ' · ' + when(x.at) : '') + '</td></tr></table>';
+      document.title = '충전 요청서 — ' + accs.map(function (a) { return a.b; }).join(', ');
     } else if (mt) { el.innerHTML = '<pre>' + esc(dec(mt[1])) + '</pre>'; }
   } catch (e) { el.textContent = '요청 내용을 읽지 못했습니다.'; }
 })();
