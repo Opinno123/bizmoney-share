@@ -12,13 +12,20 @@
   function b64enc(s) { return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
   function fail(msg) { list.innerHTML = '<div class="err">' + esc(msg) + '</div>'; }
   function len(s) { return Array.from(s).length; }
+  // 비즈머니 화면(Index.html) diLine과 똑같이 유지할 것 — sim4 K7이 두 결과를 대조한다
+  function diLine(brand, name, id, date, amount) {
+    var a = amount > 0 ? Number(amount).toLocaleString('ko-KR') : '(금액)', m = (+String(date).slice(5, 7)) + '/' + (+String(date).slice(8, 10));
+    return brand + ' ' + m + '까지 ' + a + '원 충전요청드립니다.\n\n[' + brand + ']\n광고계정ID : ' + name + '\nAdAccontNo : ' + id + '\n충전요청금액 : ' + a + '원\n충전날짜 : ' + m;
+  }
 
   var data;
   try {
     var m = /[#&]d=([^&]+)/.exec(location.hash);
-    if (!m) { fail('요청 내용이 없습니다. 비즈머니 화면의 \'카톡으로 보내기\'로 열어 주세요.'); return; }
+    if (!m) { fail('요청 내용이 없습니다. 비즈머니 화면의 \'휴대폰으로 보내기\' QR로 열어 주세요.'); return; }
     data = JSON.parse(b64dec(m[1]));
     if (!data || !Array.isArray(data.items) || !data.items.length) throw new Error('empty');
+    // v2(휴대폰 QR): items = [[브랜드, 계정명, AdAccontNo, 충전일, 금액]] → 문구는 여기서 만든다(비즈머니 화면 diLine과 같은 형식)
+    if (data.v === 2) data.items = data.items.map(function (x) { return { h: x[0] + ' 검색광고 · ' + x[1], t: diLine(x[0], x[1], x[2], x[3], x[4]), b: x[0], n: x[1], i: String(x[2]), d: x[3], a: +x[4] }; });
   } catch (e) { fail('요청 내용을 읽지 못했습니다. 비즈머니 화면에서 다시 열어 주세요.'); return; }
 
   var ready = false;
